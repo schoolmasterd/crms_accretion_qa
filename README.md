@@ -29,4 +29,7 @@ input_file<-"CRMS_ACC_Su25.csv"
 db_df<-"New_Historical_Data.csv"
 ```
 8. Finally hit _Ctrl-a_ to select all of the code, then _Ctrl-r_ to run the code. 
-9. The ouput report(s) will appear in the _Ouput_ folder. It's name will reflect the names of the input file. 
+9. The ouput report(s) will appear in the _Ouput_ folder. It's name will reflect the names of the input file.
+
+## Notes
+This script requires the R package _xtable_. If you have not already installed this package for R, you will be required to before running this script for the first time. To do so, click "Packages->Install Package(s)..." from the toolbar and scroll down the popup menu to select the package. Then click "OK" to install it.

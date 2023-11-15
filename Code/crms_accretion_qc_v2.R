@@ -3,7 +3,7 @@
 #place name of historical file in the the quotes on line 11
 
 #set path to folder
-path<-"path/to/crms_accretion_qc-main"
+path<-"path/to/crms_accretion_qa-main"
 setwd(path)
 in_path<-"Data/"
 out_path<-"Output/"
