@@ -1,9 +1,9 @@
 # CRMS Accretion QA/QC Tool
 
-##Overview
+## Overview
 The code takes as in a .csv of the data to be tested (_input data_) and a csv of historical values. It runs tests on the input data and outputs a report in .html format.
 
-##How To Use
+## How To Use
 This repository contains the latest version of the code. 
 1. Download this respository as a folder by clicking the green "<>Code" button, then "Download ZIP" from the drop-down menu. This will download a zip file to your machine. 
 2. Next, extact the zip file, which will be called "crms\_accretion\_qa-main" to a working directory on your computer.
