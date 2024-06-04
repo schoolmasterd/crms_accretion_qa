@@ -1,5 +1,6 @@
 
 
+
 #place name of current file to be QA'd in the the quotes on line 10
 #place name of historical file in the the quotes on line 11
 
@@ -27,17 +28,37 @@ stations <- sapply(strsplit(input_df$`Station ID`, "-"), "[", 1)
 
 #create a subset of the input_df with just what we need
 df_temp <-
-  data.frame(site = stations[!duplicated(input_df$`Station ID`)], input_df[!duplicated(input_df$`Station ID`),
-                                                                           c("Station ID", "Establishment Date (mm/dd/yyyy)")],
-             check.names = F)
+  data.frame(site = stations[!duplicated(input_df$`Station ID`)], input_df[!duplicated(input_df$`Station ID`), c("Station ID", "Establishment Date (mm/dd/yyyy)")], check.names = F)
 
 #create table of number of stations in a site that have the same establishment date (new data only)
 ans <- table(df_temp$site, df_temp$`Establishment Date (mm/dd/yyyy)`)
+#quantify the size of the table
+ndates <- ncol(ans)
+nsites <- nrow(ans)
+
+# UNIQUE STATIONS
+tab_1a <-
+  xtable(data.frame(
+    `Current Stations` = unique(df_temp$`Station ID`),
+    check.names = F
+  ),
+  caption = "Summary information - Unique stations")
+
+# FIRST DATE AND LAST DATE IN DATA SET
+dates <-
+  as.POSIXct(input_df$`Sample Date (mm/dd/yyyy)`, format = "%m/%d/%Y")
+tab_2a <- xtable(data.frame(
+  `First Date` = format(min(dates), "%m/%d/%Y"),
+  `Last Date` = format(max(dates), "%m/%d/%Y"),
+  check.names = F
+),
+caption = "First date and last date in data set")
+
 #make a list of all of those that are not equal to 3 (or 0)
 bad_est_dat <- list()
 k = 1
-for (i in 1:9)
-  for(j in 1:6) {
+for (i in 1:ndates)
+  for (j in 1:nsites) {
     if (ans[j, i] > 0 & ans[j, i] != 3) {
       bad_est_dat[[k]] <-
         data.frame(Site = rownames(ans)[j], Estab_date = colnames(ans)[i])
@@ -57,9 +78,7 @@ if (length(bad_est_dat) > 0) {
 
 #combine new data with corresponding station data from database
 df_temp <-
-  rbind(input_df[, c("Station ID", "Establishment Date (mm/dd/yyyy)")],
-        db_df[which(db_df$`Station ID` %in% input_df$`Station ID`),
-              c("Station ID", "Establishment Date (mm/dd/yyyy)")])
+  rbind(input_df[, c("Station ID", "Establishment Date (mm/dd/yyyy)")], db_df[which(db_df$`Station ID` %in% input_df$`Station ID`), c("Station ID", "Establishment Date (mm/dd/yyyy)")])
 
 ans <-
   tapply(df_temp$`Establishment Date (mm/dd/yyyy)`, df_temp$`Station ID`, function(x)
@@ -100,7 +119,7 @@ ans <- num_cord == num_stat
 coord_used_more_than_once <- ans[which(!ans)]
 dup_coords <- list()
 if (length(coord_used_more_than_once) > 0)
-  for(i in 1:length(coord_used_more_than_once)) {
+  for (i in 1:length(coord_used_more_than_once)) {
     foo <-
       df_temp[which(df_temp$`Station ID` %in% names(coord_used_more_than_once)[i]), ]
     dup_list <- foo$`Core X:Y`[duplicated(foo$`Core X:Y`)]
@@ -131,12 +150,97 @@ get_em <- which(apply(input_df[, who], 1, function(x)
 tab_4 <-
   xtable(input_df[get_em, c(1, 8, 9:13)], caption = "Accretion is exactly zero")
 
+#find all missing with no notes
+who <- apply(input_df[, grep("Accretion", names(input_df))], 1, function(x)
+  all(is.na(x)))
+get_em <- which(who & (is.na(input_df[, "Notes"]) |
+                         input_df$Notes == ""))
+
+if (length(get_em) > 0) {
+  tab_5 <-
+    xtable(input_df[get_em, c("Station ID", "Sample Date (mm/dd/yyyy)")], caption = "All measurements missing with no notes")
+} else {
+  tab_5 <-
+    xtable(data.frame(
+      "Station ID" = NA,
+      "Sample Date (mm/dd/yyyy)" = NA,
+      check.rows = F
+    ),
+    caption = "All measurements missing with no notes")
+}
+
+#less than three cores add note
+who <- apply(input_df[, grep("Accretion", names(input_df))], 1, function(x)
+  sum(!is.na(x))) < 3
+how_many <- apply(input_df[, grep("Accretion", names(input_df))], 1, function(x)
+  sum(!is.na(x)))[who]
+if (length(who) > 0) {
+  tab_6 <- xtable(
+    data.frame(
+      input_df[who, c("Station ID", "Group", "Sample Date (mm/dd/yyyy)")],
+      "Cores Sampled" = how_many,
+      input_df[who, "Notes"],
+      check.names = F
+    ),
+    caption = "Fewer than three cores sampled"
+  )
+} else {
+  tab_6 <- xtable(
+    data.frame(
+      "Station ID" = NA,
+      "Group" = NA,
+      "Sample Date (mm/dd/yyyy)" = NA,
+      "Cores Sampled" = NA,
+      "Notes" = NA,
+      check.rows = F
+    ),
+    caption = "Fewer than three cores sampled"
+  )
+}
+
+#find abandoned or exhausted plots
+get_em <- grep("exhausted|abandoned", input_df$Notes)
+if (length(get_em) > 0) {
+  tab_7 <- xtable(input_df[get_em, c("Station ID", "Group", "Sample Date (mm/dd/yyyy)", "Notes")],
+                caption = "Plots noted as 'Abandoned' or 'Exhausted'")
+} else {
+  tab_7 <- xtable(
+    data.frame(
+      "Station ID" = NA,
+      "Group" = NA,
+      "Sample Date (mm/dd/yyyy)" = NA,
+      "Notes" = NA,
+      check.rows = F
+    ),
+    caption = "Plots noted as 'Abandoned' or 'Exhausted'"
+  )
+}
+
+
+
+
 out_file <- strsplit(input_file, "\\.")[[1]][1]
 #write report
 #create the html output
 sink(paste0(out_path, out_file, ".html"))
 cat(preamb)
 cat(paste0('<h1>', out_file, '</h1>'), sep = "\n")
+print(
+  tab_1a,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
+cat("<br>")
+print(
+  tab_2a,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
+cat("<br>")
 print(
   tab_1,
   type = "html",
@@ -163,6 +267,30 @@ print(
 cat("<br>")
 print(
   tab_4,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
+cat("<br>")
+print(
+  tab_5,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
+cat("<br>")
+print(
+  tab_6,
+  type = "html",
+  caption.placement = "top",
+  include.rownames = FALSE,
+  html.table.attributes = ''
+)
+cat("<br>")
+print(
+  tab_7,
   type = "html",
   caption.placement = "top",
   include.rownames = FALSE,
