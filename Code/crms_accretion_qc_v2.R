@@ -9,7 +9,7 @@ path <- "path/to/crms_accretion_qa-main"
 setwd(path)
 in_path <- "Data/"
 out_path <- "Output/"
-input_file <- "CRMS_Acc_Sp23_CES_Jan.csv"
+input_file <- "CRMS_Acc_Sp24_USGS.csv"
 db_file <- "CRMS_Acc_Hist_LRO.csv"
 input_df <- read.csv(paste0(in_path, input_file), check.names = F)
 db_df <- read.csv(paste0(in_path, db_file), check.names = F)
@@ -39,7 +39,7 @@ nsites <- nrow(ans)
 # UNIQUE STATIONS
 tab_1a <-
   xtable(data.frame(
-    `Current Stations` = unique(df_temp$`Station ID`),
+    `Current Stations` = unique(df_temp$site),
     check.names = F
   ),
   caption = "Summary information - Unique stations")
@@ -78,7 +78,9 @@ if (length(bad_est_dat) > 0) {
 
 #combine new data with corresponding station data from database
 df_temp <-
-  rbind(input_df[, c("Station ID", "Establishment Date (mm/dd/yyyy)")], db_df[which(db_df$`Station ID` %in% input_df$`Station ID`), c("Station ID", "Establishment Date (mm/dd/yyyy)")])
+  rbind(input_df[, c("Station ID", "Establishment Date (mm/dd/yyyy)")], 
+        db_df[which(db_df$`Station ID` %in% input_df$`Station ID`), 
+              c("Station ID", "Establishment Date (mm/dd/yyyy)")])
 
 ans <-
   tapply(df_temp$`Establishment Date (mm/dd/yyyy)`, df_temp$`Station ID`, function(x)
@@ -164,42 +166,42 @@ if (length(get_em) > 0) {
     xtable(data.frame(
       "Station ID" = NA,
       "Sample Date (mm/dd/yyyy)" = NA,
-      check.rows = F
+      check.names = F
     ),
     caption = "All measurements missing with no notes")
 }
 
-#less than three cores add note
-who <- apply(input_df[, grep("Accretion", names(input_df))], 1, function(x)
-  sum(!is.na(x))) < 3
-how_many <- apply(input_df[, grep("Accretion", names(input_df))], 1, function(x)
-  sum(!is.na(x)))[who]
-if (length(who) > 0) {
-  tab_6 <- xtable(
-    data.frame(
-      input_df[who, c("Station ID", "Group", "Sample Date (mm/dd/yyyy)")],
-      "Cores Sampled" = how_many,
-      input_df[who, "Notes"],
-      check.names = F
-    ),
-    caption = "Fewer than three cores sampled"
-  )
-} else {
-  tab_6 <- xtable(
-    data.frame(
-      "Station ID" = NA,
-      "Group" = NA,
-      "Sample Date (mm/dd/yyyy)" = NA,
-      "Cores Sampled" = NA,
-      "Notes" = NA,
-      check.rows = F
-    ),
-    caption = "Fewer than three cores sampled"
-  )
-}
+# #less than three cores add note
+# who <- apply(input_df[, grep("Accretion", names(input_df))], 1, function(x)
+#   sum(!is.na(x))) < 3
+# how_many <- apply(input_df[, grep("Accretion", names(input_df))], 1, function(x)
+#   sum(!is.na(x)))[who]
+# if (length(who) > 0) {
+#   tab_6 <- xtable(
+#     data.frame(
+#       input_df[who, c("Station ID", "Group", "Sample Date (mm/dd/yyyy)")],
+#       "Cores Sampled" = how_many,
+#       input_df[who, "Notes"],
+#       check.names = F
+#     ),
+#     caption = "Fewer than three cores sampled"
+#   )
+# } else {
+#   tab_6 <- xtable(
+#     data.frame(
+#       "Station ID" = NA,
+#       "Group" = NA,
+#       "Sample Date (mm/dd/yyyy)" = NA,
+#       "Cores Sampled" = NA,
+#       "Notes" = NA,
+#       check.rows = F
+#     ),
+#     caption = "Fewer than three cores sampled"
+#   )
+# }
 
 #find abandoned or exhausted plots
-get_em <- grep("exhausted|abandoned", input_df$Notes)
+get_em <- grep("exhausted|abandoned|no remaining", input_df$Notes)
 if (length(get_em) > 0) {
   tab_7 <- xtable(input_df[get_em, c("Station ID", "Group", "Sample Date (mm/dd/yyyy)", "Notes")],
                 caption = "Plots noted as 'Abandoned' or 'Exhausted'")
@@ -281,14 +283,14 @@ print(
   html.table.attributes = ''
 )
 cat("<br>")
-print(
-  tab_6,
-  type = "html",
-  caption.placement = "top",
-  include.rownames = FALSE,
-  html.table.attributes = ''
-)
-cat("<br>")
+# print(
+#   tab_6,
+#   type = "html",
+#   caption.placement = "top",
+#   include.rownames = FALSE,
+#   html.table.attributes = ''
+# )
+# cat("<br>")
 print(
   tab_7,
   type = "html",
